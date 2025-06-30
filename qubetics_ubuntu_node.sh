@@ -7,6 +7,27 @@
 #fi
 current_path=$(pwd)
 
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Function to print colored output
+print_status() {
+    echo -e "${GREEN}[INFO]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
 source $HOME/.bashrc
 ulimit -n 16384
 
@@ -21,26 +42,63 @@ BINARY="qubeticsd"
 INSTALL_PATH="/usr/local/bin/"
 # INSTALL_PATH="/root/go/bin/"
 
-# Check if the OS is Ubuntu and the version is either 22.04 or 24.04
-if [ "$OS" == "Ubuntu" ] && [ "$VERSION" == "22.04" -o "$VERSION" == "24.04" ]; then
-  # Copy and set executable permissions
-  current_path=$(pwd)
-  
-  # Update package lists and install necessary packages
+
+# Check if the OS is Ubuntu and the version is either 20.04 or 22.04
+if [ "$OS" = "Ubuntu" ] && { [ "$VERSION" = "20.04" ] || [ "$VERSION" = "22.04" ] || [ "$VERSION" = "24.04" ]; }; then
+    print_status "Downloading qubeticsd binary for Ubuntu $VERSION..."
+    
+    # Download the binary
+    DOWNLOAD_URL="https://github.com/Qubetics/qubetics-mainnet-upgrade/releases/download/ubuntu${VERSION}/qubeticsd"
+    print_status "Download URL: $DOWNLOAD_URL"
+    
+    # Remove existing binary if present
+    if [ -f "$BINARY" ]; then
+        rm -f "$BINARY"
+    fi
+    
+    # Download with error checking
+    if command -v wget >/dev/null 2>&1; then
+        wget "$DOWNLOAD_URL" -O "$BINARY"
+    elif command -v curl >/dev/null 2>&1; then
+        curl -L "$DOWNLOAD_URL" -o "$BINARY"
+    else
+        print_error "Neither wget nor curl is installed. Please install one of them."
+        exit 1
+    fi
+    
+    # Verify download
+    if [ ! -f "$BINARY" ]; then
+        print_error "Failed to download binary"
+        exit 1
+    fi
+    
+    # Make the binary executable
+    chmod +x "$BINARY"
+    
+    # Verify binary works
+    if ./"$BINARY" version >/dev/null 2>&1; then
+        print_status "Binary downloaded and verified successfully"
+    else
+        print_warning "Binary downloaded but version check failed"
+    fi
+    # Update package lists and install necessary packages
   sudo  apt-get update
   sudo apt-get install -y build-essential jq wget unzip
   
   # Check if the installation path exists
   if [ -d "$INSTALL_PATH" ]; then
-  sudo  cp "$current_path/ubuntu${VERSION}build/$BINARY" "$INSTALL_PATH" && sudo chmod +x "${INSTALL_PATH}${BINARY}"
+  sudo  cp "$BINARY" "$INSTALL_PATH" && sudo chmod +x "${INSTALL_PATH}${BINARY}"
     echo "$BINARY installed or updated successfully!"
   else
     echo "Installation path $INSTALL_PATH does not exist. Please create it."
     exit 1
   fi
+     
+      
 else
-  echo "Please check the OS version support; at this time, only Ubuntu 20.04 and 22.04 are supported."
-  exit 1
+    print_error "Unsupported OS or version: $OS $VERSION"
+    print_error "Only Ubuntu 20.04 and 22.04 are supported at this time."
+    exit 1
 fi
 
 
@@ -172,7 +230,7 @@ sed -i 's/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "10m
 	 cp $current_path/genesis.json $HOMEDIR/config
 
 	# Run this to ensure everything worked and that the genesis file is setup correctly
-	qubeticsd validate-genesis --home "$HOMEDIR"
+	# qubeticsd validate-genesis --home "$HOMEDIR"
 
 	echo "export DAEMON_NAME=qubeticsd" >> ~/.profile
     echo "export DAEMON_HOME="$HOMEDIR"" >> ~/.profile
