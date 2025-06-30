@@ -139,7 +139,6 @@ echo "==========================================================================
 read -r MONIKER
 KEYS="john"
 CHAINID="qubetics_9030-1"
-MONIKER="$1"
 KEYRING="os"
 KEYALGO="eth_secp256k1"
 LOGLEVEL="info"
