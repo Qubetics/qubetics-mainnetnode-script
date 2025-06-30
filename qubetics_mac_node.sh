@@ -197,7 +197,7 @@ sudo mv /tmp/com.qubetics.myservice.plist "$PLIST_PATH"
 sudo chown $USER "$PLIST_PATH"
 sudo chmod 644 "$PLIST_PATH"
 
-# Unload if already loaded
+# Unload if already loaded 
 launchctl unload "$PLIST_PATH" 2>/dev/null || true
 
 # Load and start the launch agent
