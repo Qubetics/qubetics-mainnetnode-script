@@ -72,3 +72,4 @@ sudo systemctl stop qubeticschain.service
 
 ```bash
 launchctl stop com.qubetics.myservice
+launchctl remove com.qubetics.myservice
