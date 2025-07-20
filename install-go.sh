@@ -35,7 +35,9 @@ esac
 [ -z "$GOPATH" ] && GOPATH="$HOME/go"
 
 # Automatically fetch the latest Go version for this platform
-VERSION=$(curl -s https://go.dev/dl/ | grep "$PLATFORM.tar.gz" | sed -E "s/.*go([0-9.]+)\.$PLATFORM\.tar\.gz.*/\1/" | head -n 1)
+# VERSION=$(curl -s https://go.dev/dl/ | grep "$PLATFORM.tar.gz" | sed -E "s/.*go([0-9.]+)\.$PLATFORM\.tar\.gz.*/\1/" | head -n 1)
+
+VERSION=1.22.4
 
 # Handle CLI options
 print_help() {
