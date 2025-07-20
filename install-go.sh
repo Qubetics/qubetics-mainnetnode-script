@@ -37,7 +37,7 @@ esac
 # Automatically fetch the latest Go version for this platform
 # VERSION=$(curl -s https://go.dev/dl/ | grep "$PLATFORM.tar.gz" | sed -E "s/.*go([0-9.]+)\.$PLATFORM\.tar\.gz.*/\1/" | head -n 1)
 
-VERSION=1.22.4
+VERSION=1.23.11
 
 # Handle CLI options
 print_help() {
