@@ -163,33 +163,7 @@ fi
 	echo "========================================================================================================================"
 	qubeticsd init $MONIKER -o --chain-id $CHAINID --home "$HOMEDIR"
 
-		# Change parameter token denominations to tics
-	jq '.app_state["staking"]["params"]["bond_denom"]="tics"' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-	jq '.app_state["crisis"]["constant_fee"]["denom"]="tics"' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-	jq '.app_state["gov"]["deposit_params"]["min_deposit"][0]["denom"]="tics"' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-	jq '.app_state["gov"]["params"]["min_deposit"][0]["denom"]="tics"' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-  jq '.app_state["mint"]["params"]["mint_denom"]="tics"' >"$TMP_GENESIS" "$GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-
-	jq '.consensus_params["block"]["max_bytes"]="8388608"' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-  jq '.app_state["mint"]["params"]["blocks_per_year"]="5256000"' >"$TMP_GENESIS" "$GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-  jq '.app_state["mint"]["minter"]["inflation"]="0.000000000000000000"' >"$TMP_GENESIS" "$GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-  jq '.app_state["mint"]["params"]["inflation_rate_change"]="0.000000000000000000"' >"$TMP_GENESIS" "$GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-  jq '.app_state["mint"]["params"]["inflation_max"]="0.000000000000000000"' >"$TMP_GENESIS" "$GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-  jq '.app_state["mint"]["params"]["inflation_min"]="0.000000000000000000"' >"$TMP_GENESIS" "$GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-
-  jq '.app_state["feemarket"]["params"]["base_fee"]="30000000000000"' >"$TMP_GENESIS" "$GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-	# Set gas limit in genesis
-	jq '.consensus_params["block"]["max_gas"]="1000000000000000"' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-  jq '.app_state["gov"]["deposit_params"]["max_deposit_period"]="172800s"' >"$TMP_GENESIS" "$GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-  jq '.app_state["gov"]["params"]["max_deposit_period"]="172800s"' >"$TMP_GENESIS" "$GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-  jq '.app_state["gov"]["voting_params"]["voting_period"]="172800s"' >"$TMP_GENESIS" "$GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-  jq '.app_state["gov"]["params"]["voting_period"]="172800s"' >"$TMP_GENESIS" "$GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-  jq '.app_state["staking"]["params"]["unbonding_time"]="1209600s"' >"$TMP_GENESIS" "$GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-  jq '.app_state["slashing"]["params"]["downtime_jail_duration"]="600s"' >"$TMP_GENESIS" "$GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-  jq '.app_state["distribution"]["params"]["community_tax"]="0.000000000000000000"' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-  jq '.app_state["gov"]["params"]["min_deposit"][0]["amount"]="1000000000000000000000"' >"$TMP_GENESIS" "$GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-  jq '.app_state["slashing"]["params"]["signed_blocks_window"]="100000"' >"$TMP_GENESIS" "$GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-
+		
 	#changes status in app,config files
     sed -i 's/timeout_commit = "3s"/timeout_commit = "6s"/g' "$CONFIG"
     sed -i 's/seeds = ""/seeds = ""/g' "$CONFIG"
@@ -226,7 +200,7 @@ sed -i 's/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "10m
 	# remove the genesis file from binary
 	rm -rf $HOMEDIR/config/genesis.json
 
-	# paste thehttp://localhost:1317/swagger/# genesis file
+	# paste the genesis file
 	 cp $current_path/genesis.json $HOMEDIR/config
 
 	# Run this to ensure everything worked and that the genesis file is setup correctly
@@ -278,3 +252,71 @@ WantedBy=multi-user.target'> /etc/systemd/system/qubeticschain.service"
 sudo systemctl daemon-reload
 sudo systemctl enable qubeticschain.service
 sudo systemctl start qubeticschain.service
+
+#========================================================================================================================================================
+# SNAPSHOT DOWNLOAD AND RESTORATION
+#========================================================================================================================================================
+
+print_status "Starting snapshot download and restoration process..."
+
+# Stop the service if it's running
+sudo systemctl stop qubeticschain.service || true
+
+
+# Define snapshot URL and filename
+SNAPSHOT_URL="https://snapshots.ticsscan.com/mainnet-qubetics.zip"
+SNAPSHOT_FILE="mainnet-qubetics.zip"
+
+
+print_status "Downloading snapshot from $SNAPSHOT_URL..."
+
+# Download snapshot with error checking
+if command -v curl >/dev/null 2>&1; then
+    curl -L "$SNAPSHOT_URL" -o "$SNAPSHOT_FILE"
+elif command -v wget >/dev/null 2>&1; then
+    wget "$SNAPSHOT_URL" -O "$SNAPSHOT_FILE"
+else
+    print_error "Neither curl nor wget is available for downloading snapshot"
+    exit 1
+fi
+
+# Verify download
+if [ ! -f "$SNAPSHOT_FILE" ]; then
+    print_error "Failed to download snapshot"
+    exit 1
+fi
+
+print_status "Snapshot downloaded successfully"
+
+# Check if priv_validator_state.json exists before backing it up
+if [ -f "$HOMEDIR/data/priv_validator_state.json" ]; then
+    print_status "Backing up priv_validator_state.json..."
+    mv "$HOMEDIR/data/priv_validator_state.json" "$HOMEDIR/priv_validator_state.json"
+else
+    print_warning "priv_validator_state.json not found, skipping backup"
+fi
+
+print_status "Resetting blockchain data..."
+qubeticsd tendermint unsafe-reset-all --home "$HOMEDIR"
+
+print_status "Extracting snapshot..."
+unzip  "$SNAPSHOT_FILE" -d "$HOMEDIR/data/"
+
+# Check if the backup exists before restoring
+if [ -f "$HOMEDIR/priv_validator_state.json" ]; then
+    print_status "Restoring priv_validator_state.json..."
+    mv "$HOMEDIR/priv_validator_state.json" "$HOMEDIR/data/priv_validator_state.json"
+else
+    print_warning "Backup priv_validator_state.json not found, skipping restoration"
+fi
+
+
+print_status "Snapshot restoration completed successfully"
+
+# Start the service
+print_status "Starting qubeticschain service..."
+sudo systemctl start qubeticschain.service
+
+print_status "Node setup with snapshot completed successfully!"
+print_status "You can check the service status with: sudo systemctl status qubeticschain.service"
+print_status "You can check the logs with: sudo journalctl -u qubeticschain.service -f"
