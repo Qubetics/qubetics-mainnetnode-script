@@ -198,10 +198,10 @@ sed -i 's/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "10m
         # Don't enable memiavl by default
         grep -q -F '[memiavl]' "$APP_TOML" && sed -i '/\[memiavl\]/,/^\[/ s/enable = true/enable = false/' "$APP_TOML"
 	# remove the genesis file from binary
-	# rm -rf $HOMEDIR/config/genesis.json
+	rm -rf $HOMEDIR/config/genesis.json
 
 	# paste the genesis file
-	#  cp $current_path/genesis.json $HOMEDIR/config
+	 cp $current_path/genesis.json $HOMEDIR/config
 
 	# Run this to ensure everything worked and that the genesis file is setup correctly
 	# qubeticsd validate-genesis --home "$HOMEDIR"
