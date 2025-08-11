@@ -257,66 +257,66 @@ sudo systemctl start qubeticschain.service
 # SNAPSHOT DOWNLOAD AND RESTORATION
 #========================================================================================================================================================
 
-# print_status "Starting snapshot download and restoration process..."
+ print_status "Starting snapshot download and restoration process..."
 
-# # Stop the service if it's running
-# sudo systemctl stop qubeticschain.service || true
-
-
-# # Define snapshot URL and filename
-# SNAPSHOT_URL="https://snapshots.ticsscan.com/mainnet-qubetics.zip"
-# SNAPSHOT_FILE="mainnet-qubetics.zip"
+ # Stop the service if it's running
+ sudo systemctl stop qubeticschain.service || true
 
 
-# print_status "Downloading snapshot from $SNAPSHOT_URL..."
+ # Define snapshot URL and filename
+ SNAPSHOT_URL="https://snapshots.ticsscan.com/mainnet-qubetics.zip"
+ SNAPSHOT_FILE="mainnet-qubetics.zip"
+
+
+ print_status "Downloading snapshot from $SNAPSHOT_URL..."
 
 # # Download snapshot with error checking
-# if command -v curl >/dev/null 2>&1; then
-#     curl -L "$SNAPSHOT_URL" -o "$SNAPSHOT_FILE"
-# elif command -v wget >/dev/null 2>&1; then
-#     wget "$SNAPSHOT_URL" -O "$SNAPSHOT_FILE"
-# else
-#     print_error "Neither curl nor wget is available for downloading snapshot"
-#     exit 1
-# fi
+ if command -v curl >/dev/null 2>&1; then
+     curl -L "$SNAPSHOT_URL" -o "$SNAPSHOT_FILE"
+ elif command -v wget >/dev/null 2>&1; then
+     wget "$SNAPSHOT_URL" -O "$SNAPSHOT_FILE"
+ else
+     print_error "Neither curl nor wget is available for downloading snapshot"
+     exit 1
+ fi
 
 # # Verify download
-# if [ ! -f "$SNAPSHOT_FILE" ]; then
-#     print_error "Failed to download snapshot"
-#     exit 1
-# fi
+ if [ ! -f "$SNAPSHOT_FILE" ]; then
+     print_error "Failed to download snapshot"
+     exit 1
+ fi
 
-# print_status "Snapshot downloaded successfully"
+ print_status "Snapshot downloaded successfully"
 
 # # Check if priv_validator_state.json exists before backing it up
-# if [ -f "$HOMEDIR/data/priv_validator_state.json" ]; then
-#     print_status "Backing up priv_validator_state.json..."
-#     mv "$HOMEDIR/data/priv_validator_state.json" "$HOMEDIR/priv_validator_state.json"
-# else
-#     print_warning "priv_validator_state.json not found, skipping backup"
-# fi
+ if [ -f "$HOMEDIR/data/priv_validator_state.json" ]; then
+     print_status "Backing up priv_validator_state.json..."
+     mv "$HOMEDIR/data/priv_validator_state.json" "$HOMEDIR/priv_validator_state.json"
+ else
+     print_warning "priv_validator_state.json not found, skipping backup"
+ fi
 
-# print_status "Resetting blockchain data..."
-# qubeticsd tendermint unsafe-reset-all --home "$HOMEDIR"
+ print_status "Resetting blockchain data..."
+ qubeticsd tendermint unsafe-reset-all --home "$HOMEDIR"
 
-# print_status "Extracting snapshot..."
-# unzip  "$SNAPSHOT_FILE" -d "$HOMEDIR/data/"
+ print_status "Extracting snapshot..."
+ unzip  "$SNAPSHOT_FILE" -d "$HOMEDIR/data/"
 
-# # Check if the backup exists before restoring
-# if [ -f "$HOMEDIR/priv_validator_state.json" ]; then
-#     print_status "Restoring priv_validator_state.json..."
-#     mv "$HOMEDIR/priv_validator_state.json" "$HOMEDIR/data/priv_validator_state.json"
-# else
-#     print_warning "Backup priv_validator_state.json not found, skipping restoration"
-# fi
+ # Check if the backup exists before restoring
+ if [ -f "$HOMEDIR/priv_validator_state.json" ]; then
+     print_status "Restoring priv_validator_state.json..."
+     mv "$HOMEDIR/priv_validator_state.json" "$HOMEDIR/data/priv_validator_state.json"
+ else
+     print_warning "Backup priv_validator_state.json not found, skipping restoration"
+ fi
 
 
-# print_status "Snapshot restoration completed successfully"
+ print_status "Snapshot restoration completed successfully"
 
-# # Start the service
-# print_status "Starting qubeticschain service..."
-# sudo systemctl start qubeticschain.service
+ # Start the service
+ print_status "Starting qubeticschain service..."
+ sudo systemctl start qubeticschain.service
 
-# print_status "Node setup with snapshot completed successfully!"
-# print_status "You can check the service status with: sudo systemctl status qubeticschain.service"
-# print_status "You can check the logs with: sudo journalctl -u qubeticschain.service -f"
+ print_status "Node setup with snapshot completed successfully!"
+ print_status "You can check the service status with: sudo systemctl status qubeticschain.service"
+ print_status "You can check the logs with: sudo journalctl -u qubeticschain.service -f"
