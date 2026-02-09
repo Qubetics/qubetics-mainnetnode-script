@@ -48,7 +48,7 @@ if [ "$OS" = "Ubuntu" ] && { [ "$VERSION" = "20.04" ] || [ "$VERSION" = "22.04" 
     print_status "Downloading qubeticsd binary for Ubuntu $VERSION..."
     
     # Download the binary
-    DOWNLOAD_URL="https://github.com/Qubetics/qubetics-upgrade-v1.0.2/releases/download/ubuntu${VERSION}/qubeticsd"
+    DOWNLOAD_URL="https://github.com/Qubetics/qubetics-upgrade-v2.0.0/releases/download/ubuntu${VERSION}/qubeticsd"
     print_status "Download URL: $DOWNLOAD_URL"
     
     # Remove existing binary if present
